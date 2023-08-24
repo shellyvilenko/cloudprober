@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // readFileFromS3 reads a file using an S3 Bucket URL
@@ -36,21 +36,17 @@ func readFileFromS3(ctx context.Context, objectPath string) ([]byte, error) {
 		return nil, err
 	}
 
-	input := &s3.GetObjectInput{
+	sdkConfig, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load default config: %v", err)
+	}
+	s3Client := s3.NewFromConfig(sdkConfig)
+
+	result, err := s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(object),
-	}
-
-	// Create a new AWS session using default credentials
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %v", err)
-	}
 
-	svc := s3.New(sess)
-	result, err := svc.GetObject(input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve file (%s): %v", objectPath, err)
 	}
@@ -65,20 +61,16 @@ func s3ModTime(ctx context.Context, objectPath string) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	input := &s3.HeadObjectInput{
+	sdkConfig, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to load default config: %v", err)
+	}
+	s3Client := s3.NewFromConfig(sdkConfig)
+
+	result, err := s3Client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(object),
-	}
-
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
 	})
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to create AWS session: %v", err)
-	}
-
-	svc := s3.New(sess)
-	result, err := svc.HeadObject(input)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to retrieve file (%s): %v", objectPath, err)
 	}

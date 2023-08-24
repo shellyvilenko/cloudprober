@@ -86,7 +86,7 @@ func TestReadWithCache(t *testing.T) {
 	}
 
 	readAndVerify := func(expectedContent string, reloadInterval time.Duration) {
-		b, err := ReadWithCache(f.Name(), reloadInterval)
+		b, err := ReadWithCache(context.Background(), f.Name(), reloadInterval)
 		assert.NoError(t, err, "reading file")
 		assert.Equal(t, expectedContent, string(b))
 	}
